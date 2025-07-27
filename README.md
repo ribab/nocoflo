@@ -1,43 +1,60 @@
 # Directory structure layout
 
 ```
-layout.html
-utils.py
-config copy.py
-nococlone.db
-.cursorignore
-sample_data.db
-layout
-layout/main_layout.py
-layout/layout.py
-pages
-pages/register.py
-pages/admin_users_page.py
-pages/logout.py
-pages/admin_invite_page.py
-pages/grid_demo.py
-pages/permissions_page.py
-pages/login.py
-pages/table_view.py
-pages/home.py
-main.py
-metadata.py
-archive
-README.md
-layout_template.py
-requirements.txt
-help
-help/ui.txt
-help/ui.input
-nocoflo.db
-explore
-explore/app.py
-config.py
-plan
-plan/plan.md
-components
-components/README.md
-components/grid.p
+📁 **Project Root**
+|
+|   ARCHIVED
+├── layout.html
+├── config copy.py
+|
+|   IMPORTANT FILES
+├── .cursorignore
+├── README.md
+|
+|   GENERATED FILES
+├── nococlone.db
+├── sample_data.db
+|
+|   MOVE TO src/ FOLDER
+├── main.py
+├── config.py
+├── requirements.txt
+├── layout_template.py
+|
+├── utils.py
+├── metadata.py
+│
+├── **layout/**
+│   ├── main_layout.py
+│   └── layout.py
+│
+├── **pages/**
+│   ├── register.py
+│   ├── admin_users_page.py
+│   ├── logout.py
+│   ├── admin_invite_page.py
+│   ├── grid_demo.py
+│   ├── permissions_page.py
+│   ├── login.py
+│   ├── table_view.py
+│   └── home.py
+│
+├── **help/**
+│   ├── ui.txt
+│   └── ui.input
+│
+├── **explore/**
+│   └── app.py
+│
+├── **plan/**
+│   └── plan.md
+│
+├── **components/**
+│   ├── README.md
+│   └── grid.py
+│
+├── archive/
+├── nocoflo.db
 ```
 
 # NocoClone MVP
