@@ -8,12 +8,29 @@ from sqlalchemy import text
 sys.path.append(str(Path(__file__).parent.parent))
 
 import metadata
-from layout_template import layout
+import config
+from components.layout.default_layout import layout
 from components.grid import create_grid
+from components.datasources.sqlite_datasource import SQLiteDatasource
+from components.datasources.postgresql_datasource import PostgreSQLDatasource
+from components.datasources.mysql_datasource import MySQLDatasource
+from components.views.table_view import TableView
+
+def get_appropriate_datasource(connection_string: str):
+    """Get the appropriate datasource based on connection string"""
+    if connection_string.startswith('sqlite://') or connection_string.endswith('.db'):
+        return SQLiteDatasource()
+    elif connection_string.startswith('postgresql://'):
+        return PostgreSQLDatasource()
+    elif connection_string.startswith('mysql://'):
+        return MySQLDatasource()
+    else:
+        # Default to SQLite
+        return SQLiteDatasource()
 
 def get_primary_key(table_id: int) -> str:
     """Get primary key column for a table"""
-    with sqlite3.connect(metadata.METADATA_DB) as conn:
+    with metadata.get_metadata_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT tm.table_name, dc.con_str 
@@ -90,7 +107,7 @@ def table_view(table_id: int):
         return
     
     # Get table info
-    with sqlite3.connect(metadata.METADATA_DB) as conn:
+    with metadata.get_metadata_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT tm.display_name, tm.table_name, dc.db_name
@@ -279,4 +296,29 @@ def table_view(table_id: int):
 
 @ui.page('/table/{table_id}')
 def render_page(table_id):
-    layout(lambda: table_view(table_id))
+    """Render the table view page"""
+    # Get table info to determine datasource
+    with sqlite3.connect(metadata.METADATA_DB) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT dc.con_str
+            FROM table_meta tm
+            JOIN dbconfig dc ON tm.db_id = dc.id
+            WHERE tm.id = ?
+        """, (int(table_id),))
+        
+        row = cursor.fetchone()
+        if not row:
+            ui.label('❌ Table not found')
+            return
+        
+        connection_string = row[0]
+    
+    # Get appropriate datasource and create table view
+    datasource = get_appropriate_datasource(connection_string)
+    table_view_instance = TableView(int(table_id), datasource)
+    
+    def render_content():
+        table_view_instance.render()
+    
+    layout(render_content, int(table_id))

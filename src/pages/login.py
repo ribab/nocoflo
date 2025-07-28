@@ -8,11 +8,7 @@ from pathlib import Path
 sys.path.append(Path(__file__).parent.parent)
 
 import metadata
-
-
-def verify_password(password: str, hash: str) -> bool:
-    """Verify password against hash"""
-    return bcrypt.checkpw(password.encode(), hash.encode())
+from components.common.auth import authenticate_user, login_user
 
 @ui.page('/login')
 def login():
@@ -24,12 +20,9 @@ def login():
         password = ui.input('Password', password=True).classes('mb-4')
         
         def do_login():
-            user = metadata.get_user_by_email(email.value)
-            if user and verify_password(password.value, user['password_hash']):
-                for k in list(app.storage.user):
-                    del app.storage.user[k]
-                for k,v in user.items():
-                    app.storage.user[k] = v
+            user = authenticate_user(email.value, password.value)
+            if user:
+                login_user(user)
                 ui.navigate.to('/')
             else:
                 ui.notify('❌ Invalid credentials', type='negative')

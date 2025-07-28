@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.append(Path(__file__).parent.parent)
 
 import metadata
+from components.common.permissions import can_manage_permissions, get_table_users, grant_permission, revoke_permission, get_permission_level_name
 
 @ui.page('/permissions/{table_id}')
 def permissions_page(table_id: int):
@@ -16,7 +17,7 @@ def permissions_page(table_id: int):
         return
     
     # Check if user can manage permissions
-    if app.storage.user['role'] != 'admin' and not metadata.has_permission(table_id, 'owner'):
+    if not can_manage_permissions(table_id):
         ui.label('❌ Access denied. Only admins and table owners can manage permissions.')
         ui.link('← Back to tables', '/tables')
         return
@@ -40,18 +41,7 @@ def permissions_page(table_id: int):
     ui.label(f'🔐 Manage Permissions: {display_name}').classes('text-2xl mb-4')
     
     # Get all users and their current permissions
-    with sqlite3.connect(metadata.METADATA_DB) as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT u.id, u.name, u.email, u.role,
-                   COALESCE(p.can_read, 0), COALESCE(p.can_write, 0), 
-                   COALESCE(p.can_delete, 0), COALESCE(p.is_owner, 0)
-            FROM user u
-            LEFT JOIN permission p ON u.id = p.user_id AND p.table_id = ?
-            ORDER BY u.name
-        """, (table_id,))
-        
-        users = cursor.fetchall()
+    users = get_table_users(table_id)
     
     # Permission form
     ui.label('➕ Grant New Permission').classes('text-lg mb-2')

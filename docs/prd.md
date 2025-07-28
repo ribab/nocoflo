@@ -76,6 +76,9 @@ The current Nocoflo system is tightly coupled with hard-coded table views and SQ
 4. **NFR4:** The system must maintain backward compatibility with existing database schemas
 5. **NFR5:** The plugin system must support hot-reload for development purposes
 6. **NFR6:** The architecture must support progressive enhancement without breaking existing functionality
+7. **NFR7:** All new development must follow test-driven development (TDD) practices with comprehensive test coverage
+8. **NFR8:** Test coverage must be maintained at minimum 90% for all new components and plugins
+9. **NFR9:** All tests must pass before any code changes are committed to the main branch
 
 ### Compatibility Requirements
 1. **CR1:** Existing API endpoints must remain functional with the same request/response formats
@@ -139,6 +142,28 @@ The new component-based architecture will integrate with the existing NiceGUI-ba
 **Integration Risks:** Component separation may introduce bugs in existing functionality
 **Deployment Risks:** Plugin loading may fail in production environments
 **Mitigation Strategies:** Comprehensive testing, gradual rollout, fallback mechanisms for plugin failures
+
+## Development Methodology
+
+### Test-Driven Development (TDD) Requirements
+**TDD Mandate:** All new development must follow test-driven development practices
+**TDD Process:** Write failing tests first, implement minimal code to pass, refactor while maintaining test coverage
+**Test Coverage Requirements:** Minimum 90% coverage for all new components and plugins
+**Test Quality Standards:** Tests must be meaningful, maintainable, and provide clear failure messages
+
+### TDD Workflow for Component Development
+1. **Test First:** Write unit tests for component interfaces before implementation
+2. **Component Isolation:** Test each component in isolation with mocked dependencies
+3. **Integration Testing:** Test component interactions with existing system
+4. **Regression Testing:** Ensure existing functionality remains intact
+5. **Continuous Integration:** All tests must pass before code review and merge
+
+### TDD Workflow for Plugin Development
+1. **Plugin Interface Testing:** Test plugin interfaces and hook specifications
+2. **Plugin Integration Testing:** Test plugin loading and registration
+3. **Plugin Functionality Testing:** Test plugin-specific features and capabilities
+4. **Plugin Compatibility Testing:** Test plugin interactions with existing components
+5. **Plugin Performance Testing:** Test plugin impact on system performance
 
 ## Epic and Story Structure
 

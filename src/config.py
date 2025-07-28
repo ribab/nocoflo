@@ -1,7 +1,26 @@
+import os
+import argparse
+from typing import Dict, Optional
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+env_path = Path(__file__).parent / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
+else:
+    env_path = Path(__file__).parent.parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+
 from nicegui import ui, app
 
 # Configure default styles for NiceGUI components
 def configure_theme():
+    """Configure the NiceGUI theme"""
+    ui.dark_mode().enable()
+    ui.colors(primary='#1976D2')
+
     # Add Tailwind CSS
     ui.add_head_html('''
         <script src="https://cdn.tailwindcss.com"></script>
@@ -82,6 +101,91 @@ def configure_theme():
     
     # Configure default footer styles
     ui.footer.default_classes('bg-gray-900 text-white border-t border-gray-700 p-4')
+
+def get_metadata_datasource_config() -> Dict[str, str]:
+    """
+    Get metadata datasource configuration from environment variables or CLI
+    
+    Returns:
+        Dictionary with datasource configuration
+    """
+    # Default to SQLite
+    config = {
+        'datasource_type': 'sqlite',
+        'connection_string': 'nocoflo.db',
+        'host': 'localhost',
+        'port': '5432',
+        'database': 'nocoflo',
+        'username': '',
+        'password': ''
+    }
+    
+    # Load from environment variables
+    env_mapping = {
+        'NOCOFLO_METADATA_DATASOURCE': 'datasource_type',
+        'NOCOFLO_METADATA_CONNECTION_STRING': 'connection_string',
+        'NOCOFLO_METADATA_HOST': 'host',
+        'NOCOFLO_METADATA_PORT': 'port',
+        'NOCOFLO_METADATA_DATABASE': 'database',
+        'NOCOFLO_METADATA_USERNAME': 'username',
+        'NOCOFLO_METADATA_PASSWORD': 'password'
+    }
+    
+    for env_var, config_key in env_mapping.items():
+        env_value = os.getenv(env_var)
+        if env_value:
+            config[config_key] = env_value
+    
+    # Build connection string based on datasource type
+    datasource_type = config['datasource_type']
+    if datasource_type == 'sqlite':
+        config['connection_string'] = config['connection_string']
+    elif datasource_type == 'postgresql':
+        username = config['username']
+        password = config['password']
+        host = config['host']
+        port = config['port']
+        database = config['database']
+        
+        if username and password:
+            config['connection_string'] = f"postgresql://{username}:{password}@{host}:{port}/{database}"
+        else:
+            config['connection_string'] = f"postgresql://{host}:{port}/{database}"
+    elif datasource_type == 'mysql':
+        username = config['username']
+        password = config['password']
+        host = config['host']
+        port = config['port']
+        database = config['database']
+        
+        if username and password:
+            config['connection_string'] = f"mysql://{username}:{password}@{host}:{port}/{database}"
+        else:
+            config['connection_string'] = f"mysql://{host}:{port}/{database}"
+    
+    return config
+
+def get_metadata_datasource_type() -> str:
+    """Get the metadata datasource type"""
+    config = get_metadata_datasource_config()
+    return config['datasource_type']
+
+def get_metadata_connection_string() -> str:
+    """Get the metadata connection string"""
+    config = get_metadata_datasource_config()
+    return config['connection_string']
+
+def is_metadata_sqlite() -> bool:
+    """Check if metadata is using SQLite"""
+    return get_metadata_datasource_type() == 'sqlite'
+
+def is_metadata_postgresql() -> bool:
+    """Check if metadata is using PostgreSQL"""
+    return get_metadata_datasource_type() == 'postgresql'
+
+def is_metadata_mysql() -> bool:
+    """Check if metadata is using MySQL"""
+    return get_metadata_datasource_type() == 'mysql'
 
 # Call this function at the start of your application
 def init_theme():

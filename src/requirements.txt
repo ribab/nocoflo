@@ -3,4 +3,9 @@ bcrypt>=4.0.0
 pandas>=2.0.0
 sqlalchemy>=2.0.0
 openpyxl>=3.0.0
-uuid 
+uuid
+python-dotenv>=1.0.0
+psycopg2-binary>=2.9.0
+mysql-connector-python>=8.0.0
+pluggy>=1.0.0
+pydantic>=2.0.0 

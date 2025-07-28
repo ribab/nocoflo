@@ -130,7 +130,7 @@ def get_table_data(table_id: int, limit: int = 100) -> tuple:
     with sqlite3.connect(METADATA_DB) as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT tm.table_name, dc.con_str 
+            SELECT tm.table_name, dc.con_str, dc.db_name
             FROM table_meta tm 
             JOIN dbconfig dc ON tm.db_id = dc.id 
             WHERE tm.id = ?
@@ -140,20 +140,20 @@ def get_table_data(table_id: int, limit: int = 100) -> tuple:
         if not row:
             return [], []
         
-        table_name, con_str = row
+        table_name, con_str, db_name = row
     
-    # Connect to external database
-    engine = create_engine(con_str)
-    with engine.connect() as conn:
-        # Get table schema
-        result = conn.execute(text(f"PRAGMA table_info({table_name})"))
-        columns = [row[1] for row in result.fetchall()]
-        
-        # Get data
-        result = conn.execute(text(f"SELECT * FROM {table_name} LIMIT {limit}"))
-        rows = result.fetchall()
-        
-        return columns, rows
+    # Use the new datasource manager
+    from components.datasources.manager import DataSourceManager
+    manager = DataSourceManager()
+    
+    table_config = {
+        'table_id': table_id,
+        'table_name': table_name,
+        'connection_string': con_str,
+        'db_name': db_name
+    }
+    
+    return manager.get_table_data(table_config, limit)
 
 
 def get_user_by_email(email: str) -> Optional[Dict]:

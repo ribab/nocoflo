@@ -589,6 +589,186 @@ PLUGIN_CONFIG = {
 
 ## Testing Strategy
 
+### Test-Driven Development (TDD) with pytest
+
+#### TDD Framework and Tools
+**Primary Testing Framework:** pytest with comprehensive TDD workflow
+**Test Discovery:** pytest automatic test discovery with `test_*.py` and `*_test.py` patterns
+**Test Organization:** Hierarchical test structure mirroring component architecture
+**Coverage Tool:** pytest-cov for coverage measurement and reporting
+**Mocking Framework:** pytest-mock for dependency isolation and component testing
+
+#### TDD Workflow Implementation
+**Red-Green-Refactor Cycle:**
+1. **Red Phase:** Write failing tests using pytest fixtures and assertions
+2. **Green Phase:** Implement minimal code to make tests pass
+3. **Refactor Phase:** Improve code while maintaining test coverage
+
+**pytest TDD Configuration:**
+```python
+# pytest.ini configuration for TDD workflow
+[tool:pytest]
+testpaths = tests
+python_files = test_*.py *_test.py
+python_classes = Test*
+python_functions = test_*
+addopts = 
+    --strict-markers
+    --disable-warnings
+    --cov=src
+    --cov-report=term-missing
+    --cov-report=html
+    --cov-fail-under=90
+markers =
+    unit: Unit tests for isolated components
+    integration: Integration tests for component interactions
+    plugin: Plugin-specific tests
+    regression: Regression tests for existing functionality
+```
+
+#### Component Testing with pytest
+
+**Base Component Test Structure:**
+```python
+# tests/components/test_base_view.py
+import pytest
+from unittest.mock import Mock, patch
+from src.components.views.base_view import BaseView
+
+class TestBaseView:
+    @pytest.fixture
+    def mock_datasource(self):
+        """Mock datasource for isolated component testing"""
+        return Mock()
+    
+    @pytest.fixture
+    def sample_table_meta(self):
+        """Sample table metadata for testing"""
+        return {
+            'id': 1,
+            'name': 'test_table',
+            'columns': ['id', 'name', 'value']
+        }
+    
+    def test_base_view_initialization(self, mock_datasource):
+        """Test that base view can be initialized with datasource"""
+        view = BaseView(table_id=1, datasource=mock_datasource)
+        assert view.table_id == 1
+        assert view.datasource == mock_datasource
+    
+    def test_base_view_abstract_methods(self):
+        """Test that base view requires implementation of abstract methods"""
+        with pytest.raises(TypeError):
+            BaseView(table_id=1, datasource=Mock())
+    
+    @pytest.mark.unit
+    def test_can_handle_table_interface(self, mock_datasource):
+        """Test that can_handle_table method exists and returns boolean"""
+        # This test will fail initially (Red phase)
+        view = BaseView(table_id=1, datasource=mock_datasource)
+        result = view.can_handle_table({})
+        assert isinstance(result, bool)
+```
+
+**Plugin Testing with pytest:**
+```python
+# tests/plugins/test_plugin_manager.py
+import pytest
+from unittest.mock import Mock, patch
+from src.plugins.plugin_manager import PluginManager
+
+class TestPluginManager:
+    @pytest.fixture
+    def plugin_manager(self):
+        """Plugin manager instance for testing"""
+        return PluginManager()
+    
+    @pytest.fixture
+    def mock_plugin(self):
+        """Mock plugin for testing"""
+        plugin = Mock()
+        plugin.get_view_class.return_value = Mock()
+        plugin.get_view_priority.return_value = 1
+        return plugin
+    
+    @pytest.mark.unit
+    def test_plugin_registration(self, plugin_manager, mock_plugin):
+        """Test that plugins can be registered"""
+        plugin_manager.register_plugin(mock_plugin)
+        assert mock_plugin in plugin_manager.plugins
+    
+    @pytest.mark.integration
+    def test_plugin_discovery(self, plugin_manager):
+        """Test that plugins are discovered from designated directories"""
+        with patch('pathlib.Path.glob') as mock_glob:
+            mock_glob.return_value = ['test_plugin.py']
+            plugin_manager.load_plugins()
+            # Verify plugins were loaded
+            assert len(plugin_manager.plugins) > 0
+```
+
+#### TDD Integration Testing
+
+**Component Interaction Testing:**
+```python
+# tests/integration/test_view_plugin_integration.py
+import pytest
+from unittest.mock import Mock, patch
+from src.components.views.table_view import TableView
+from src.plugins.plugin_manager import PluginManager
+
+class TestViewPluginIntegration:
+    @pytest.fixture
+    def plugin_manager(self):
+        return PluginManager()
+    
+    @pytest.fixture
+    def mock_datasource(self):
+        datasource = Mock()
+        datasource.get_table_data.return_value = (
+            ['id', 'name'], 
+            [(1, 'test'), (2, 'example')]
+        )
+        return datasource
+    
+    @pytest.mark.integration
+    def test_table_view_plugin_integration(self, plugin_manager, mock_datasource):
+        """Test that table view plugin integrates with plugin manager"""
+        # Get available views through plugin system
+        views = plugin_manager.get_available_views({'name': 'test_table'})
+        assert len(views) > 0
+        
+        # Verify table view is available
+        table_views = [v for v in views if isinstance(v, TableView)]
+        assert len(table_views) > 0
+```
+
+#### TDD Regression Testing
+
+**Existing Functionality Preservation:**
+```python
+# tests/regression/test_existing_functionality.py
+import pytest
+from src.table_view import TableView  # Existing component
+
+class TestExistingFunctionality:
+    @pytest.mark.regression
+    def test_existing_table_view_still_works(self):
+        """Test that existing table view functionality is preserved"""
+        # Test existing table view behavior
+        view = TableView(table_id=1, datasource=Mock())
+        # Verify existing methods still work
+        assert hasattr(view, 'render')
+        assert hasattr(view, 'get_table_data')
+    
+    @pytest.mark.regression
+    def test_existing_database_operations(self):
+        """Test that existing database operations continue to work"""
+        # Test existing database functionality
+        # This ensures refactoring doesn't break existing features
+        pass
+```
+
 ### Integration with Existing Tests
 **Existing Test Framework:** pytest with existing test patterns
 **Test Organization:** Extend existing test structure for components
@@ -666,6 +846,56 @@ Developers implementing this brownfield enhancement should:
 - Optimize performance (Story 1.7) to meet requirements
 
 **Risk Mitigation:** Each story includes integration verification steps to ensure existing functionality remains intact. Rollback procedures are defined for each major component change.
+
+### TDD Workflow Integration
+
+#### Development Process with TDD
+**Story Implementation Workflow:**
+1. **Test Planning:** Define test scenarios for each acceptance criterion
+2. **Test Implementation:** Write failing tests using pytest fixtures
+3. **Code Implementation:** Implement minimal code to pass tests
+4. **Refactoring:** Improve code while maintaining test coverage
+5. **Integration Testing:** Test component interactions with existing system
+6. **Regression Testing:** Ensure existing functionality remains intact
+
+#### TDD Quality Gates
+**Pre-commit Requirements:**
+- All tests must pass (pytest exit code 0)
+- Test coverage must be ≥90% for new components
+- No test warnings or deprecation notices
+- All integration tests must pass
+
+**Code Review Requirements:**
+- Test coverage reports must be included
+- Test quality and maintainability must be reviewed
+- Integration test scenarios must be comprehensive
+- Regression test coverage must be verified
+
+#### TDD Tools and Automation
+**CI/CD Integration:**
+```yaml
+# .github/workflows/tdd-tests.yml
+name: TDD Test Suite
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-cov pytest-mock
+          pip install -r requirements.txt
+      - name: Run TDD test suite
+        run: |
+          pytest --cov=src --cov-report=xml --cov-fail-under=90
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+```
 
 ## Benefits of This Architecture
 
